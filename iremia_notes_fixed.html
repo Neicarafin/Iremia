@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iremía - Verified Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Merriweather:wght@400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8f9fb;
+            --sidebar-bg: #ffffff;
+            --text-main: #111827;
+            --card-yellow: #fcf4d0;
+            --card-pink: #fddde0;
+            --card-blue: #d1e9f6;
+            --accent: #111827;
+        }
+
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { margin: 0; display: flex; background-color: var(--bg-color); height: 100vh; overflow: hidden; }
+
+        aside { width: 260px; background: var(--sidebar-bg); border-right: 1px solid #e5e7eb; padding: 30px 20px; display: flex; flex-direction: column; }
+        .logo { font-weight: 800; font-size: 28px; margin-bottom: 40px; text-transform: uppercase; letter-spacing: -1px; }
+        nav ul { list-style: none; padding: 0; margin: 0; }
+        nav li { padding: 12px 15px; color: #6b7280; cursor: pointer; font-weight: 600; border-radius: 12px; margin-bottom: 5px; transition: 0.2s; }
+        nav li.active { background: #f3f4f6; color: var(--text-main); }
+
+        .btn-primary { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 12px; width: 100%; cursor: pointer; font-weight: 700; margin-bottom: 20px; }
+
+        main { flex: 1; padding: 40px 60px; overflow-y: auto; }
+        .search-bar { background: white; border: 1px solid #e5e7eb; padding: 14px 20px; border-radius: 14px; width: 100%; max-width: 400px; outline: none; margin-bottom: 40px; }
+        .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+
+        .note-card {
+            border-radius: 20px; padding: 25px; height: 230px; cursor: pointer; 
+            border: 1px solid rgba(0,0,0,0.05); transition: 0.3s;
+            display: flex; flex-direction: column; position: relative;
+            overflow: hidden;
+        }
+        .note-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.06); }
+        .note-card.yellow { background-color: var(--card-yellow); }
+        .note-card.pink { background-color: var(--card-pink); }
+        .note-card.blue { background-color: var(--card-blue); }
+
+        .note-card h3 { margin: 0 0 10px 0; font-size: 20px; font-weight: 700; }
+        .note-card p { margin: 0; flex: 1; overflow: hidden; color: #4b5563; line-height: 1.5; }
+
+        .card-footer { margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #6b7280; }
+        .action-link { cursor: pointer; text-transform: uppercase; margin-left: 10px; transition: 0.2s; }
+        .action-link:hover { text-decoration: underline; }
+        .action-link.red { color: #dc2626; }
+
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 95%; max-width: 1100px; height: 90vh; border-radius: 30px; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .toolbar { padding: 15px 25px; border-bottom: 1px solid #eee; display: flex; gap: 10px; align-items: center; background: #fff; flex-wrap: wrap; }
+        .tool-select { padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-weight: 600; outline: none; }
+        #text-color-picker { width: 40px; height: 34px; padding: 0; border: none; cursor: pointer; border-radius: 6px; }
+        
+        .format-btn { background: #f3f4f6; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .format-btn:hover { background: #e5e7eb; }
+        
+        .color-picker-group { display: flex; gap: 8px; }
+        .color-option { width: 30px; height: 30px; border-radius: 8px; cursor: pointer; border: 3px solid transparent; transition: 0.2s; }
+        .color-option:hover { transform: scale(1.1); }
+        .color-option.active { border-color: #111827; }
+        .color-option.yellow { background-color: var(--card-yellow); }
+        .color-option.pink { background-color: var(--card-pink); }
+        .color-option.blue { background-color: var(--card-blue); }
+        
+        .editor-container { flex: 1; padding: 40px 60px; overflow-y: auto; }
+        #edit-title { font-size: 36px; font-weight: 800; border: none; outline: none; background: transparent; margin-bottom: 20px; width: 100%; }
+        #edit-body { min-height: 400px; font-size: 18px; line-height: 1.6; border: none; outline: none; }
+        
+        #edit-img-preview { max-width: 100%; border-radius: 15px; margin-top: 20px; display: none; position: relative; }
+        .img-remove-btn { position: absolute; top: 30px; right: 70px; background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; display: none; }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="logo">iremía</div>
+        <button class="btn-primary" onclick="createNewNote()">+ NEW NOTE</button>
+        <nav>
+            <ul>
+                <li id="nav-active" class="active" onclick="setView('active')">📝 NOTES</li>
+                <li id="nav-archive" onclick="setView('archive')">📦 ARCHIVE</li>
+                <li id="nav-trash" onclick="setView('trash')">🗑️ TRASH</li>
+            </ul>
+        </nav>
+        <input type="file" id="imgIn" hidden accept="image/*">
+    </aside>
+
+    <main>
+        <input type="text" id="search" class="search-bar" placeholder="Search entries..." oninput="render()">
+        <div class="notes-grid" id="grid"></div>
+    </main>
+
+    <div id="modal-overlay" onclick="handleOverlayClick(event)">
+        <div class="modal-content" id="modal-window">
+            <div class="toolbar">
+                <select class="tool-select" onchange="applyFont(this.value)">
+                    <option value="Inter, sans-serif">Inter</option>
+                    <option value="Merriweather, serif">Merriweather</option>
+                </select>
+                <select class="tool-select" onchange="exec('fontSize', this.value)">
+                    <option value="3">Size</option>
+                    <option value="1">Small</option>
+                    <option value="3">Normal</option>
+                    <option value="5">Large</option>
+                    <option value="7">XL</option>
+                </select>
+                <button class="format-btn" onclick="exec('bold')"><b>B</b></button>
+                <button class="format-btn" onclick="exec('italic')"><i>I</i></button>
+                <input type="color" id="text-color-picker" oninput="exec('foreColor', this.value)" title="Text Color">
+                <button class="format-btn" onclick="document.getElementById('imgIn').click()">🖼️ IMG</button>
+                <div class="color-picker-group">
+                    <div class="color-option yellow" onclick="changeNoteColor('yellow')" title="Yellow"></div>
+                    <div class="color-option pink" onclick="changeNoteColor('pink')" title="Pink"></div>
+                    <div class="color-option blue" onclick="changeNoteColor('blue')" title="Blue"></div>
+                </div>
+                <div style="flex-grow:1"></div>
+                <button class="format-btn" onclick="closeNote()" style="background:#111; color:#fff;">SAVE & CLOSE</button>
+            </div>
+            <div class="editor-container">
+                <input type="text" id="edit-title" placeholder="Untitled">
+                <button class="img-remove-btn" id="img-remove-btn" onclick="removeImage()">Remove Image</button>
+                <div id="edit-body" contenteditable="true"></div>
+                <img id="edit-img-preview">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let notes = [];
+        try {
+            const stored = localStorage.getItem('iremia_MASTER');
+            notes = stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            console.error('Error loading notes:', e);
+            notes = [];
+        }
+        
+        let activeId = null;
+        let activeView = 'active';
+
+        function save() { 
+            try {
+                localStorage.setItem('iremia_MASTER', JSON.stringify(notes)); 
+                render(); 
+            } catch (e) {
+                console.error('Error saving notes:', e);
+                alert('Failed to save notes. Storage may be full.');
+            }
+        }
+
+        function exec(cmd, val = null) {
+            document.execCommand('styleWithCSS', false, true);
+            document.execCommand(cmd, false, val);
+            document.getElementById('edit-body').focus();
+        }
+
+        function applyFont(font) {
+            exec('fontName', font);
+        }
+
+        function setView(v) {
+            activeView = v;
+            document.querySelectorAll('nav li').forEach(l => l.classList.remove('active'));
+            document.getElementById(`nav-${v}`).classList.add('active');
+            render();
+        }
+
+        function createNewNote() {
+            const id = Date.now();
+            notes.unshift({ 
+                id, 
+                title: '', 
+                content: '', 
+                color: 'yellow', 
+                status: 'active', 
+                image: null, 
+                date: new Date().toLocaleDateString() 
+            });
+            save();
+            openNote(id);
+        }
+
+        function changeNoteColor(color) {
+            if (activeId) {
+                const n = notes.find(x => x.id === activeId);
+                if (n) {
+                    n.color = color;
+                    document.getElementById('modal-window').style.backgroundColor = `var(--card-${color})`;
+                    updateColorPicker();
+                }
+            }
+        }
+
+        function updateColorPicker() {
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('active'));
+            const n = notes.find(x => x.id === activeId);
+            if (n) {
+                document.querySelector(`.color-option.${n.color}`).classList.add('active');
+            }
+        }
+
+        function removeImage() {
+            if (activeId) {
+                const n = notes.find(x => x.id === activeId);
+                if (n) {
+                    n.image = null;
+                    document.getElementById('edit-img-preview').style.display = 'none';
+                    document.getElementById('img-remove-btn').style.display = 'none';
+                }
+            }
+        }
+
+        function openNote(id) {
+            activeId = id;
+            const n = notes.find(x => x.id === id);
+            if (!n) return;
+            
+            document.getElementById('edit-title').value = n.title;
+            document.getElementById('edit-body').innerHTML = n.content;
+            document.getElementById('modal-window').style.backgroundColor = `var(--card-${n.color})`;
+            
+            const img = document.getElementById('edit-img-preview');
+            const removeBtn = document.getElementById('img-remove-btn');
+            if (n.image) {
+                img.src = n.image;
+                img.style.display = 'block';
+                removeBtn.style.display = 'block';
+            } else {
+                img.style.display = 'none';
+                removeBtn.style.display = 'none';
+            }
+            
+            updateColorPicker();
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function closeNote() {
+            if (activeId) {
+                const n = notes.find(x => x.id === activeId);
+                if (n) {
+                    n.title = document.getElementById('edit-title').value;
+                    n.content = document.getElementById('edit-body').innerHTML;
+                    save();
+                }
+            }
+            document.getElementById('modal-overlay').style.display = 'none';
+            activeId = null;
+        }
+
+        function handleOverlayClick(event) {
+            if (event.target.id === 'modal-overlay') {
+                closeNote();
+            }
+        }
+
+        function moveStatus(id, s) {
+            if (s === 'delete') {
+                if (confirm("Permanently delete this note?")) {
+                    notes = notes.filter(x => x.id !== id);
+                }
+            } else {
+                const note = notes.find(x => x.id === id);
+                if (note) note.status = s;
+            }
+            save();
+        }
+
+        function truncateText(text, maxLength) {
+            const stripped = text.replace(/<[^>]*>/g, '');
+            return stripped.length > maxLength ? stripped.substring(0, maxLength) + '...' : stripped;
+        }
+
+        function render() {
+            const grid = document.getElementById('grid');
+            const query = document.getElementById('search').value.toLowerCase();
+            grid.innerHTML = '';
+            
+            const filtered = notes.filter(n => {
+                return n.status === activeView && 
+                    (n.title.toLowerCase().includes(query) || 
+                     n.content.toLowerCase().includes(query));
+            });
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p style="color: #6b7280; grid-column: 1/-1; text-align: center; padding: 40px;">No notes found</p>';
+                return;
+            }
+            
+            filtered.forEach(n => {
+                const card = document.createElement('div');
+                card.className = `note-card ${n.color}`;
+                card.onclick = () => openNote(n.id);
+                
+                const title = document.createElement('h3');
+                title.textContent = n.title || 'Untitled';
+                
+                const preview = document.createElement('p');
+                preview.textContent = truncateText(n.content, 150);
+                
+                const footer = document.createElement('div');
+                footer.className = 'card-footer';
+                
+                const date = document.createElement('span');
+                date.textContent = n.date;
+                
+                const actions = document.createElement('div');
+                
+                if (activeView === 'active') {
+                    const archiveLink = document.createElement('span');
+                    archiveLink.className = 'action-link';
+                    archiveLink.textContent = 'ARCH';
+                    archiveLink.onclick = (e) => {
+                        e.stopPropagation();
+                        moveStatus(n.id, 'archive');
+                    };
+                    
+                    const trashLink = document.createElement('span');
+                    trashLink.className = 'action-link red';
+                    trashLink.textContent = 'TRASH';
+                    trashLink.onclick = (e) => {
+                        e.stopPropagation();
+                        moveStatus(n.id, 'trash');
+                    };
+                    
+                    actions.appendChild(archiveLink);
+                    actions.appendChild(trashLink);
+                } else {
+                    const restoreLink = document.createElement('span');
+                    restoreLink.className = 'action-link';
+                    restoreLink.textContent = 'REST';
+                    restoreLink.onclick = (e) => {
+                        e.stopPropagation();
+                        moveStatus(n.id, 'active');
+                    };
+                    
+                    const deleteLink = document.createElement('span');
+                    deleteLink.className = 'action-link red';
+                    deleteLink.textContent = 'DEL';
+                    deleteLink.onclick = (e) => {
+                        e.stopPropagation();
+                        moveStatus(n.id, 'delete');
+                    };
+                    
+                    actions.appendChild(restoreLink);
+                    actions.appendChild(deleteLink);
+                }
+                
+                footer.appendChild(date);
+                footer.appendChild(actions);
+                
+                card.appendChild(title);
+                card.appendChild(preview);
+                card.appendChild(footer);
+                grid.appendChild(card);
+            });
+        }
+
+        document.getElementById('imgIn').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image too large. Please use an image under 5MB.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                if (activeId) {
+                    const note = notes.find(x => x.id === activeId);
+                    if (note) {
+                        note.image = ev.target.result;
+                        const img = document.getElementById('edit-img-preview');
+                        img.src = ev.target.result;
+                        img.style.display = 'block';
+                        document.getElementById('img-remove-btn').style.display = 'block';
+                    }
+                }
+            };
+            reader.onerror = () => {
+                alert('Failed to load image');
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        };
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && activeId !== null) {
+                closeNote();
+            }
+        });
+
+        render();
+    </script>
+</body>
+</html>
