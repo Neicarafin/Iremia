@@ -16,6 +16,39 @@
             --card-blue: #d1e9f6;
             --accent: #111827;
         }
+        body.dark-mode {
+    --bg-color: #1a1a1a;
+    --sidebar-bg: #252525;
+    --text-main: #e5e7eb;
+    --card-yellow: #3a3420;
+    --card-pink: #3a2628;
+    --card-blue: #1f2937;
+    --accent: #e5e7eb;
+}
+
+body.dark-mode .search-bar {
+    background: #333;
+    border-color: #444;
+    color: #e5e7eb;
+}
+
+body.dark-mode nav li {
+    color: #9ca3af;
+}
+
+body.dark-mode nav li.active {
+    background: #333;
+    color: #e5e7eb;
+}
+
+body.dark-mode .format-btn {
+    background: #333;
+    color: #e5e7eb;
+}
+
+body.dark-mode .format-btn:hover {
+    background: #444;
+}
 
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { margin: 0; display: flex; background-color: var(--bg-color); height: 100vh; overflow: hidden; }
@@ -81,6 +114,7 @@
 
     <aside>
         <div class="logo">iremía</div>
+        <button class="btn-primary" onclick="toggleDarkMode()" style="background: #6b7280; margin-bottom: 10px;">🌙 DARK MODE</button>
         <button class="btn-primary" onclick="createNewNote()">+ NEW NOTE</button>
         <nav>
             <ul>
@@ -396,7 +430,16 @@
                 closeNote();
             }
         });
+function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('darkMode', isDark);
+}
 
+// Load dark mode preference
+if (localStorage.getItem('darkMode') === 'true') {
+    document.body.classList.add('dark-mode');
+}
         render();
     </script>
 </body>
